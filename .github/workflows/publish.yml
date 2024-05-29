@@ -27,7 +27,8 @@ jobs:
       - name: Install R Dependencies
         uses: r-lib/actions/setup-renv@v2
         with:
-          repos: 'c("siloed-backup" = ..., CRAN = ..., universe = "https://zkamvar.r-universe.dev")'
+          cache-version: 1
+
 
       - name: Render and Publish
         uses: quarto-dev/quarto-actions/publish@v2
