@@ -1,0 +1,1 @@
+Sitemap: https://andabaka.github.io/earthquakes/sitemap.xml
