@@ -1,0 +1,92 @@
+/*-- scss:defaults --*/
+// Base document colors
+$body-bg: #FAEBDDFF;
+$body-color: #5A5555;
+$link-color: #611E51;
+
+// Code blocks
+$code-block-bg-alpha: -.8;
+
+
+.bslib-value-box .value-box-title {
+    font-size: 13px;
+    margin-top: 0;
+    font-family: Baskerville;
+    color: #5A5555
+}
+
+.bslib-card .card-body p:last-child {
+    margin-bottom: 0;
+    font-size: 22px;
+    font-family: Montserrat;
+    color:#611E51;
+    font-weight: bold;
+
+}
+
+.oi-3a86ea-input>input[type=number] {
+    border-style: solid;
+    border-color: rgba(220, 220, 220, 0.3)
+}
+
+.quarto-dashboard .bslib-value-box .value-box-showcase .bi::before {
+    color: #611E51;
+}
+
+
+.card {
+    background-color: white!important;
+    --bs-card-border-color: white!important;
+    --bs-card-title-color:#611E51!important;
+
+}
+
+.card-header {
+    background-color: white!important;
+}
+
+.card-title {
+    font-family: Baskerville;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.quarto-dashboard #quarto-dashboard-header .navbar .navbar-container {
+    background-color: white;
+    font-family: Baskerville;
+    font-size: 20px;
+}
+
+.quarto-dashboard #quarto-dashboard-header .navbar .navbar-title a {
+    color: #5A5555!important;
+    font-weight: bold;
+}
+
+.table {
+    --bs-table-striped-bg: white!important;
+}
+
+
+.html-fill-container > .html-fill-item {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap; /* Ensure items wrap to the next line if needed */
+    min-height: 0;
+    min-width: 0;
+  }
+
+form.oi-3a86ea>label {
+        font-family: Baskerville;
+  }
+
+.oi-3a86ea-input>input, .oi-3a86ea-input>output {
+    font-family: Montserrat!important;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  background-color: white; /* Change thumb color */
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  background-color: #FAEBDDFF; /* Change track color */
+}
