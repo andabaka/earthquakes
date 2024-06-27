@@ -75,8 +75,6 @@ quakes_for_ojs <- quakes_df %>%
 ojs_define(quakes_data = quakes_for_ojs)
 
 
-
-
 ```
 
 ## Row {height="15%"}
@@ -201,21 +199,13 @@ html`<style>
 </style>`
 
 
-// Add event listener to reset button
-resetButton = {
-  viewof reset.addEventListener("click", () => {
-    viewof start_date.value = initial_start_date;
-    viewof end_date.value = initial_end_date;
-    viewof min_magnitude.value = initial_min_magnitude;
-  });
-}
-
 
 filtered_quakes = quakes_data_df.filter(d => 
   new Date(d.date_only) >= new Date(start_date) &&
   new Date(d.date_only) <= new Date(end_date) &&
   d.mag >= min_magnitude
 )
+
 ```
 
 
@@ -256,6 +246,7 @@ color_scale = d3.scaleSequential(t => d3.interpolateMagma(1 - t))
 
 
 
+// Create the map with filtered data
 // Create the map with filtered data
 map = {
   // Calculate dimensions based on card width
@@ -319,6 +310,7 @@ map = {
   return map;
 }
 ```
+
 
 ### Column 
 
@@ -385,7 +377,49 @@ table tr:nth-child(even) {
 table tr:hover {
   background-color: #D5C3C3;
 }
-</style>`
+</style>
+`
 
+
+// Add event listener to reset button
+resetButton = {
+  viewof reset.addEventListener("click", () => {
+    viewof start_date.value = initial_start_date;
+    viewof end_date.value = initial_end_date;
+    viewof min_magnitude.value = initial_min_magnitude;
+  });
+}
+
+html`
+<style>
+    .dashboard-footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #5A5555;
+        text-align: left;
+        padding: 5px;
+        font-size: 0.7em;
+        border-top: 1px solid #eee;
+        line-height: 1.2;
+        font-family: Baskerville;
+    }
+   .dashboard-footer a {
+    color: #AB8787;
+    text-decoration: none;
+}
+</style>
+<footer class="dashboard-footer">
+    Data source: <a href="https://earthquake.usgs.gov/" target="_blank">USGS</a>. 
+Note: The data may not reflect real-time conditions due to potential missing earthquakes. 
+Smaller earthquakes, especially outside the U.S., may not be rapidly reported or located. For more detailed information, please refer to the USGS website. The earthquake data is updated daily at 9:00 AM UTC. 
+<a href="https://github.com/andabaka/earthquakes" target="_blank">
+    <i class="fab fa-github"></i> Source Code
+</a>
+</footer> 
+`
 ```
+
 
