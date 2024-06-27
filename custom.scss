@@ -1,11 +1,18 @@
 /*-- scss:defaults --*/
 // Base document colors
-$body-bg: #FAEBDDFF;
+$body-bg: #D5C3C3;
 $body-color: #5A5555;
-$link-color: #611E51;
+$link-color: #AB8787;
 
 // Code blocks
 $code-block-bg-alpha: -.8;
+
+
+.card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+   border-radius: 15px;
+}
+
 
 
 .bslib-value-box .value-box-title {
@@ -19,7 +26,7 @@ $code-block-bg-alpha: -.8;
     margin-bottom: 0;
     font-size: 22px;
     font-family: Montserrat;
-    color:#611E51;
+    color:#845C5C;
     font-weight: bold;
 
 }
@@ -30,14 +37,14 @@ $code-block-bg-alpha: -.8;
 }
 
 .quarto-dashboard .bslib-value-box .value-box-showcase .bi::before {
-    color: #611E51;
+    color: #845C5C;
 }
 
 
 .card {
     background-color: white!important;
     --bs-card-border-color: white!important;
-    --bs-card-title-color:#611E51!important;
+    --bs-card-title-color:#845C5C!important;
 
 }
 
@@ -62,18 +69,14 @@ $code-block-bg-alpha: -.8;
     font-weight: bold;
 }
 
-.table {
-    --bs-table-striped-bg: white!important;
-}
-
-
 .html-fill-container > .html-fill-item {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap; /* Ensure items wrap to the next line if needed */
-    min-height: 0;
+        min-height: 0;
     min-width: 0;
-  }
+}
+
 
 form.oi-3a86ea>label {
         font-family: Baskerville;
@@ -88,5 +91,36 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-  background-color: #FAEBDDFF; /* Change track color */
+  background-color: #D5C3C3; /* Change track color */
 }
+
+.observablehq--number {
+    color: #845C5C!important;
+    font-family: Montserrat!important;
+    font-size: 20px!important;
+    font-weight: bold;
+}
+
+
+.quarto-dashboard .card.valuebox .card-body, .quarto-dashboard .card.bslib-value-box .card-body {
+    font-family: Montserrat!important;
+    color: #845C5C!important;
+    font-weight: bold!important;
+}
+
+.bslib-value-box .value-box-area * {
+    font-size: 20px;
+    font-weight: bold;
+
+
+}
+
+.leaflet-container {
+    position: none!important;
+}
+
+.oi-3a86ea-table table {
+    max-width: 900px!important;
+
+}
+

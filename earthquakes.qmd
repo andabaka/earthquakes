@@ -1,9 +1,11 @@
 ---
-title: "Latest Earthquakes in Croatia"
+title: "Earthquakes in Croatia"
 format: 
   dashboard: 
     logo: "images/logo.png"
     orientation: rows
+    embed-resources: true
+  
 
 ---
 
@@ -11,10 +13,7 @@ format:
 ```{r, echo=FALSE, include=FALSE,message=FALSE, load_packages}
 library(tidyverse)
 library(httr2)
-library(leaflet)
-library(gt)
-library(viridisLite)
-
+library(sf)
 ```
 
 
@@ -64,196 +63,329 @@ quakes_df <- quakes_df %>%
         place = str_remove(place, ", Croatia$")
     )
 
+# Prepare data for OJS
+quakes_for_ojs <- quakes_df %>%
+  mutate(
+    time = as.numeric(time) * 1000, # Convert to milliseconds for JS
+    date_only = as.character(date_only) # Convert date to string
+  ) %>%
+  select(mag, place, time, lon, lat, depth, time_only, days_ago, date_only)
 
-
-```
-
-```{r, summary}
-# Hours since last earthquake
-now_nz <- now(tzone = "CET")
-last_24 <- quakes_df %>%  filter(time > (now_nz - hours(24)))
-n_24 <- nrow(last_24)
-hours_last <- round(difftime(now_nz, quakes_df$time[1], units = "hours"))
-
-# Find the most recent earthquake
-last_eq <- quakes_df %>%
-    arrange(desc(time)) %>%
-    slice(1)
-
-# Extract magnitude of the last earthquake
-last_eq_magnitude <- last_eq$mag
-
-# Extract location of the last earthquake
-last_eq_location <- last_eq$place
-
-days_eq <- last_eq$days_ago
-
-
-```
-
-```{r, leaflet_map}
-# Make a map
-
-mag_pal <- colorBin(palette = rev(rocket(8)), domain = 1:8, bins = c(1:5, 8))
-
-quake_map <- quakes_df |> 
-    leaflet() |> 
-    addCircleMarkers(
-        color = ~ mag_pal(mag),
-        stroke = FALSE,
-        fillOpacity = 0.5,
-        radius = ~ scales::rescale(sqrt(mag), c(1, 10)),
-        label = ~ paste(
-            "Date:", date_only, "<br/>",
-            "Time:", time_only, "<br/>",
-            "Magnitude:", round(mag, 2), "<br/>",
-            "Depth:", depth, " km" ,"<br/>",
-            "Location:", place
-            
-        ) |> map(html),
-        labelOptions = c(textsize = "15px")) |> 
-    addLegend(title = "Magnitude", colors = mag_pal(1:5), labels = c("1", "2", "3", "4", ">5")) %>% 
-    addProviderTiles(providers$CartoDB.Positron, options = tileOptions(minZoom = 7, maxZoom = 10))
-
-
-```
+# Use ojs_define to send data to OJS
+ojs_define(quakes_data = quakes_for_ojs)
 
 
 
-## Row {height="20%"}
 
-```{r}
-#| component: valuebox
-#| title: Days since last earthquake
-list(
-  icon = "calendar-event",
-  color = "white",
-  value = days_eq
-)
-```
-
-
-```{r}
-#| component: valuebox
-#| title: Earthquakes in the last 24 hours
-list(
-  icon = "clock",
-  color = "white",
-  value = n_24
-)
-```
-
-```{r}
-#| component: valuebox
-#| title: Magnitude of the last earthquake
-list(
-  icon = "activity",
-  color = "white",
-  value = last_eq_magnitude
-)
-```
-
-```{r}
-#| component: valuebox
-#| title: Location of the last earthquake
-list(
-  icon = "geo-alt-fill",
-  color = "white",
-  value = last_eq_location
-)
 ```
 
 ## Row {height="15%"}
 
-```{r, sendtoojs}
-#| echo: false
-#| include: false
-ojs_define(top_n_ojs = quakes_df)
+```{ojs}
+//| output: false
+
+quakes_data_df = transpose(quakes_data)
+
+// Calculate values for value boxes
+days_since_last = d3.timeDay.count(d3.max(quakes_data_df, d => d.time), new Date())
+quakes_last_24h = quakes_data_df.filter(d => 
+  d.time >= d3.timeDay.offset(new Date(), -1)
+).length
+last_mag = quakes_data_df[0]?.mag
+
+
 ```
+
 
 
 ```{ojs}
-//| title: Filter Data
+//| component: valuebox
+//| title: Days since last earthquake
+//| icon: calendar-event
+//| color: white
+days_since_last
+```
 
-// Tranpose the data to  make it usable in ojs
-top_n_tbl = transpose(top_n_ojs)
+```{ojs}
+//| component: valuebox
+//| title: Earthquakes in the last 24 hours
+//| icon: clock
+//| color: white
+quakes_last_24h 
+```
 
-parse = d3.utcParse("%Y-%m-%d %H:%M:%S %Z")
-top_n_tblParsed= top_n_tbl.map((d) => ({time: parse(d.time)}))
+```{ojs}
+//| component: valuebox
+//| title: Magnitude of the last earthquake
+//| icon: activity
+//| color: white
+last_mag
+```
 
-viewof start_date = Inputs.date(
-top_n_tblParsed.filter(d => d.time),
-  {label: "Start Date:", 
-  value: "2024-01-01",
-  min: "2020-01-01",
-  max: new Date().toISOString().split('T')[0] }
-)
+```{ojs}
+//| component: valuebox
+//| title: Location of the last earthquake
+//| icon: geo-alt
+//| color: white
+function stripQuotes(str) {
+  return str.replace(/['"]+/g, '');
+}
 
-viewof end_date = Inputs.date(
-top_n_tblParsed.filter(d => d.time),
-
-  {label: "End Date:", 
-  value: new Date().toISOString().split('T')[0] }
-)
-
-viewof mag = Inputs.range([1, 10],
-
-  {label: "Magnitude:", 
-  value: 1.1,
-  step: 0.1 }
-)
-
+{
+  const place = stripQuotes(quakes_data_df[0]?.place);
+  return html`${place}`;
+}
 ```
 
 
+## Row {height="15%"}
+
+
+```{ojs}
+//| component: card
+//| title: Filter Earthquakes
+
+// Include FontAwesome for icons
+html`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">`
+
+// Initialize the filter options with default values
+initial_start_date = d3.min(quakes_data_df, d => d.date_only)
+initial_end_date = d3.max(quakes_data_df, d => d.date_only)
+initial_min_magnitude = 1
+
+
+viewof start_date = Inputs.date({
+  label: "Start Date", 
+  value: initial_start_date,
+  max: initial_end_date,
+  min: initial_start_date
+  
+})
+
+viewof end_date = Inputs.date({
+  label: "End Date", 
+  value: initial_end_date,
+  min: initial_start_date,
+  max: initial_end_date
+  
+})
+
+
+viewof min_magnitude = Inputs.range([1, 10], {
+  step: 0.1, 
+  label: "Min Magnitude", 
+  value: initial_min_magnitude
+})
+
+
+viewof reset = html`<button class="reset-button" id="resetButton"><i class="fas fa-redo"></i></button>`
+
+// Custom Reset Button with Icon
+html`<style>
+  .reset-button {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background-color: #D5C3C3;
+    color: #5A5555;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  .reset-button:hover {
+    background-color: #AB8787;
+  }
+  .reset-button i {
+    font-size: 15px;
+  }
+</style>`
+
+
+// Add event listener to reset button
+resetButton = {
+  viewof reset.addEventListener("click", () => {
+    viewof start_date.value = initial_start_date;
+    viewof end_date.value = initial_end_date;
+    viewof min_magnitude.value = initial_min_magnitude;
+  });
+}
+
+
+filtered_quakes = quakes_data_df.filter(d => 
+  new Date(d.date_only) >= new Date(start_date) &&
+  new Date(d.date_only) <= new Date(end_date) &&
+  d.mag >= min_magnitude
+)
+```
 
 
 ## Row 
 
-### Column
+### Column 
 
-```{r}
-#| title: 20 Latest Earthquakes
+```{ojs}
+//| component: card
 
-# Create quakes table
+L = require('leaflet@1.2.0')
 
-quakes_df %>%
-  select(date_only, time_only, mag, depth, place) %>%  
-  gt(id = "custom") %>% 
-  cols_label(
-    date_only = "Date",
-    time_only = "Time",
-    mag = "Magnitude",
-    depth = "Depth",
-    place = "Location"
-  ) %>% 
-  fmt_integer(
-    columns = depth, 
-    pattern = "{x} km"
-  ) |> 
-  fmt_number(
-    columns = mag,
-    decimals = 1
-  ) |> 
- tab_options(
-    table.font.color = "#5A5555",
-    table.background.color = "white",
-    table.font.names = "Montserrat",
-    table.font.size = px(14),
-    footnotes.background.color = "#5A5555",
-    source_notes.background.color = "#FAEBDDFF"
-  ) |> 
-   
-  tab_source_note(
-    source_note = md(paste("Retrieved from the [GeoNet API](https://api.geonet.org.nz/) at", format(now_nz, "%Y/%m/%d %H:%M %Z")))
-  ) 
+// Include Leaflet CSS and custom legend CSS
+html`<link href='${resolve('leaflet@1.2.0/dist/leaflet.css')}' rel='stylesheet' />`
+
+html`
+<style>
+.info.legend {
+  line-height: 18px;
+  color: #555;
+  background: white;
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  border-radius: 5px;
+  padding: 10px;
+}
+.info.legend i {
+  width: 18px;
+  height: 18px;
+  float: left;
+  margin-right: 8px;
+  opacity: 0.7;
+}
+</style>
+`
+color_scale = d3.scaleSequential(t => d3.interpolateMagma(1 - t))
+  .domain([1, 6]);
+
+
+
+// Create the map with filtered data
+map = {
+  // Calculate dimensions based on card width
+  let width = 850; // Prilagodite širinu kartice prema potrebi
+  let height = width / 1.6; // Omjer širine i visine za kartu
+
+  // Create the container for the map
+  let container = DOM.element('div', {
+    style: `width: ${width}px; height: ${height}px`
+  });
+  yield container;
+
+   let map = L.map(container).setView([44.4, 16.4], 7);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png', {
+      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  filtered_quakes.forEach(d => {
+    L.circleMarker([d.lat, d.lon], {
+      radius: d3.scaleLinear().domain([1, 6]).range([1, 6])(d.mag),
+      fillColor: color_scale(d.mag),
+      color: "#000",
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.5
+    }).addTo(map)
+      .bindPopup(`
+        Date: ${d.date_only}<br/>
+        Time: ${d.time_only}<br/>
+        Magnitude: ${d.mag.toFixed(2)}<br/>
+        Depth: ${d.depth} km<br/>
+        Location: ${d.place}
+      `);
+  });
+
+  // Add legend to the map
+  var legend = L.control({position: 'bottomleft'});
+  legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'info legend'),
+      grades = [1, 2, 3, 4, 5,6],
+      labels = [];
+      
+      div.innerHTML += '<strong>Magnitude</strong><br>';
+
+    // Loop through intervals to generate labels with a colored square for each interval
+   for (var i = 0; i < grades.length; i++) {
+    var label = grades[i];
+    if (label === 6) {
+      label = '6+';
+    }
+    div.innerHTML +=
+       '<i style="background:' + color_scale(grades[i]) + '"></i> '+
+      label + '<br>';
+  }
+
+
+    return div;
+  };
+  legend.addTo(map);
+
+  return map;
+}
+```
+
+### Column 
+
+```{ojs}
+
+viewof table = Inputs.table(filtered_quakes, {
+  columns: [
+    "date_only",
+    "time_only",
+    "mag",
+    "depth",
+    "place"
+  ],
+  header: {
+    date_only: "Date",
+    time_only: "Time",
+    mag: "Magnitude",
+    depth: "Depth",
+    place: "Location"
+  },
+  width: {
+   date_only: 150,
+    time_only: 100,
+    mag: 80,
+    depth: 80,
+    place: 150
+  },
+  format: {
+    depth: x => Number.isInteger(x) ? x.toString() : x.toFixed(2)
+  },
+  rows: Infinity, 
+  pagination: true
+})
+
+
+html`<style>
+table {
+  table-layout: auto;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+  color: #5A5555;
+  border-bottom: 1px solid #ddd;
+  font-family: Baskerville;
+  font-weight: bold;
+}
+
+td {
+  border-bottom: 1px solid #ddd;
+  word-wrap: break-word;
+  font-family: Montserrat;
+  color: #5A5555;
+}
+table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+table tr:hover {
+  background-color: #D5C3C3;
+}
+</style>`
 
 ```
 
-
-### Column
-
-```{r}
-#| title: 100 Latest Earthquakes
-quake_map
-```
