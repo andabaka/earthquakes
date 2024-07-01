@@ -140,17 +140,47 @@ function stripQuotes(str) {
 
 
 ```{ojs}
-//| component: card
+//| output: false
 //| title: Filter Earthquakes
+
+d3 = require("d3@6")
 
 // Include FontAwesome for icons
 html`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">`
+
 
 // Initialize the filter options with default values
 initial_start_date = d3.min(quakes_data_df, d => d.date_only)
 initial_end_date = d3.max(quakes_data_df, d => d.date_only)
 initial_min_magnitude = 1
 
+
+filtered_quakes = {
+  reset;
+  return quakes_data_df.filter(d => 
+    new Date(d.date_only) >= new Date(start_date) &&
+    new Date(d.date_only) <= new Date(end_date) &&
+    d.mag >= min_magnitude
+  );
+}
+
+resetButton = {
+  viewof reset.addEventListener("click", () => {
+    viewof start_date.value = initial_start_date;
+    viewof end_date.value = initial_end_date;
+    viewof min_magnitude.value = initial_min_magnitude;
+    viewof start_date.dispatchEvent(new Event('input'));
+    viewof end_date.dispatchEvent(new Event('input'));
+    viewof min_magnitude.dispatchEvent(new Event('input'));
+  });
+  return viewof reset;
+}
+```
+
+
+```{ojs}
+//| component: card
+//| title: Filter Earthquakes
 
 viewof start_date = Inputs.date({
   label: "Start Date", 
@@ -175,7 +205,6 @@ viewof min_magnitude = Inputs.range([1, 10], {
   value: initial_min_magnitude
 })
 
-
 viewof reset = html`<button class="reset-button" id="resetButton"><i class="fas fa-redo"></i></button>`
 
 // Custom Reset Button with Icon
@@ -199,15 +228,7 @@ html`<style>
 </style>`
 
 
-
-filtered_quakes = quakes_data_df.filter(d => 
-  new Date(d.date_only) >= new Date(start_date) &&
-  new Date(d.date_only) <= new Date(end_date) &&
-  d.mag >= min_magnitude
-)
-
 ```
-
 
 ## Row 
 
@@ -242,11 +263,9 @@ html`
 </style>
 `
 color_scale = d3.scaleSequential(t => d3.interpolateMagma(1 - t))
-  .domain([1, 6]);
+  .domain([1, 7]);
 
 
-
-// Create the map with filtered data
 // Create the map with filtered data
 map = {
   // Calculate dimensions based on card width
@@ -266,7 +285,7 @@ map = {
 
   filtered_quakes.forEach(d => {
     L.circleMarker([d.lat, d.lon], {
-      radius: d3.scaleLinear().domain([1, 6]).range([1, 6])(d.mag),
+      radius: d3.scaleLinear().domain([1, 7]).range([1, 7])(d.mag),
       fillColor: color_scale(d.mag),
       color: "#000",
       weight: 1,
@@ -274,6 +293,7 @@ map = {
       fillOpacity: 0.5
     }).addTo(map)
       .bindPopup(`
+      <div style="font-family: 'Montserrat', serif;">
         Date: ${d.date_only}<br/>
         Time: ${d.time_only}<br/>
         Magnitude: ${d.mag.toFixed(2)}<br/>
@@ -283,25 +303,20 @@ map = {
   });
 
   // Add legend to the map
-  var legend = L.control({position: 'bottomleft'});
+  var legend = L.control({position: 'topleft'});
   legend.onAdd = function (map) {
     var div = L.DomUtil.create('div', 'info legend'),
       grades = [1, 2, 3, 4, 5,6],
       labels = [];
       
-      div.innerHTML += '<strong>Magnitude</strong><br>';
+      div.innerHTML += '<strong style="font-family: Baskerville;">Magnitude</strong><br>';
 
     // Loop through intervals to generate labels with a colored square for each interval
    for (var i = 0; i < grades.length; i++) {
-    var label = grades[i];
-    if (label === 6) {
-      label = '6+';
+      div.innerHTML +=
+        '<i style="background:' + color_scale(grades[i]) + '"></i> ' +
+        grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
     }
-    div.innerHTML +=
-       '<i style="background:' + color_scale(grades[i]) + '"></i> '+
-      label + '<br>';
-  }
-
 
     return div;
   };
@@ -312,7 +327,7 @@ map = {
 ```
 
 
-### Column 
+### Column
 
 ```{ojs}
 
@@ -381,14 +396,42 @@ table tr:hover {
 `
 
 
-// Add event listener to reset button
-resetButton = {
-  viewof reset.addEventListener("click", () => {
-    viewof start_date.value = initial_start_date;
-    viewof end_date.value = initial_end_date;
-    viewof min_magnitude.value = initial_min_magnitude;
-  });
+// Make footer
+html`<style>
+table {
+  table-layout: auto;
 }
+
+th, td {
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+  color: #5A5555;
+  border-bottom: 1px solid #ddd;
+  font-family: Baskerville;
+  font-weight: bold;
+}
+
+td {
+  border-bottom: 1px solid #ddd;
+  word-wrap: break-word;
+  font-family: Montserrat;
+  color: #5A5555;
+}
+table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+table tr:hover {
+  background-color: #D5C3C3;
+}
+</style>
+`
+
+
 
 html`
 <style>
