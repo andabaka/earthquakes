@@ -22,7 +22,6 @@ library(sf)
 
 # Fetching earthquake data from USGS API
 # This query retrieves data for Croatia from 1990 to present
-Sys.setlocale(category = "LC_ALL", locale = "en_US.UTF-8")
 req <- request("https://earthquake.usgs.gov/fdsnws/event/1/query.geojson?starttime=1990-01-01%2000:00:00&maxlatitude=46.604&minlatitude=41.919&maxlongitude=19.512&minlongitude=13.469&minmagnitude=1&orderby=time") %>%
     req_method("GET")
 
@@ -40,6 +39,8 @@ resp <- req %>%
 
 # Creating a data frame from the API response and cleaning the data
 # This includes formatting dates, calculating days ago, and filtering for Croatia
+
+Sys.setenv(TZ="UTC")
 quakes_df <- data.frame(
     mag = unlist(lapply(resp$features, FUN = function(x) { x$properties$mag })),
     place = (unlist(lapply(resp$features, FUN = function(x) { x$properties$place }))),
@@ -50,7 +51,7 @@ quakes_df <- data.frame(
 )
 
 
-quakes_df$time <- as.POSIXct(quakes_df$time / 1000, origin = "1970-01-01")
+quakes_df$time <- as.POSIXct(quakes_df$time / 1000, origin = "1970-01-01", tz = "UTC")
 quakes_df <- quakes_df %>% 
     mutate(
         time = time + hours(1), 
@@ -93,9 +94,8 @@ quakes_df$place <- quakes_df$place %>%
 # Preparing data for use in Observable JS
 quakes_for_ojs <- quakes_df %>%
   mutate(
-    time = as.numeric(time) * 1000, # Convert to milliseconds for JS
-    date_only = as.character(date_only),
-    place = enc2utf8(place)
+    time = as.numeric(as.POSIXct(time, tz = "UTC")) * 1000, # Convert to milliseconds for JS
+    date_only = as.character(date_only)
   ) %>%
   select(mag, place, time, lon, lat, depth, time_only, days_ago, date_only)
 
@@ -114,11 +114,11 @@ ojs_define(quakes_data = quakes_for_ojs)
 quakes_data_df = transpose(quakes_data)
 
 // Calculating summary statistics for value boxes
-days_since_last = d3.timeDay.count(d3.max(quakes_data_df, d => d.time), new Date())
+days_since_last = d3.timeDay.count(d3.max(quakes_data_df.map(d => new Date(d.time))), new Date())
 quakes_last_24h = quakes_data_df.filter(d => 
-  d.time >= d3.timeDay.offset(new Date(), -1)
+  new Date(d.time) >= d3.timeDay.offset(new Date(), -1)
 ).length
-last_mag = quakes_data_df[0]?.mag
+last_mag = quakes_data_df[0]?.mag || "N/A"
 
 ```
 
