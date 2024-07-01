@@ -53,7 +53,7 @@ quakes_df <- data.frame(
 quakes_df$time <- as.POSIXct(quakes_df$time / 1000, origin = "1970-01-01")
 quakes_df <- quakes_df %>% 
     mutate(
-        time = time,
+        time = time + hours(1), 
         time_only = format(time, "%H:%M"),
         days_ago = today() - date(time),
         days_ago = case_when(
