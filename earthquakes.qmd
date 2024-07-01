@@ -1,16 +1,19 @@
 ---
-title: "Earthquakes in Croatia"
+title: "Earthquakes in Croatia from 1990"
 format: 
   dashboard: 
     logo: "images/logo.png"
     orientation: rows
     embed-resources: true
-  
+   
 
 ---
 
 
+
 ```{r, echo=FALSE, include=FALSE,message=FALSE, load_packages}
+
+# Loading necessary R packages for data processing and HTTP requests
 library(tidyverse)
 library(httr2)
 library(sf)
@@ -20,24 +23,30 @@ library(sf)
 
 ```{r, echo=FALSE, include=FALSE,message=FALSE, get_data}
 
-# Get data from USGS
+# Fetching earthquake data from USGS API
+# This query retrieves data for Croatia from 1990 to present
+Sys.setlocale(category = "LC_ALL", locale = "en_US.UTF-8")
 req <- request("https://earthquake.usgs.gov/fdsnws/event/1/query.geojson?starttime=1990-01-01%2000:00:00&maxlatitude=46.604&minlatitude=41.919&maxlongitude=19.512&minlongitude=13.469&minmagnitude=1&orderby=time") %>%
-    req_method("GET")
+    req_method("GET")%>%
+    req_headers("Accept-Charset" = "utf-8")
 
 
 resp <- req %>%
     req_perform() %>%
     resp_body_json()
 
+
+
 ```
 
 
 ```{r, clean_data}
 
-# Create data frame
+# Creating a data frame from the API response and cleaning the data
+# This includes formatting dates, calculating days ago, and filtering for Croatia
 quakes_df <- data.frame(
     mag = unlist(lapply(resp$features, FUN = function(x) { x$properties$mag })),
-    place = unlist(lapply(resp$features, FUN = function(x) { x$properties$place })),
+    place = (unlist(lapply(resp$features, FUN = function(x) { x$properties$place }))),
     time = unlist(lapply(resp$features, FUN = function(x) { x$properties$time })),
     lon = unlist(lapply(resp$features, FUN = function(x) { x$geometry$coordinates[1] })),
     lat = unlist(lapply(resp$features, FUN = function(x) { x$geometry$coordinates[2] })),
@@ -45,7 +54,6 @@ quakes_df <- data.frame(
 )
 
 
-# Clean and prepare data
 quakes_df$time <- as.POSIXct(quakes_df$time / 1000, origin = "1970-01-01")
 quakes_df <- quakes_df %>% 
     mutate(
@@ -63,11 +71,34 @@ quakes_df <- quakes_df %>%
         place = str_remove(place, ", Croatia$")
     )
 
-# Prepare data for OJS
+# Handling UTF-8 problems
+capitalize_question_marks <- function(x) {
+  words <- strsplit(x, " ")[[1]]
+  capitalized_words <- sapply(words, function(word) {
+    if (substr(word, 1, 1) == "?") {
+      paste0("C", substr(word, 2, nchar(word)))
+    } else {
+      word
+    }
+  })
+  paste(capitalized_words, collapse = " ")
+}
+
+quakes_df$place <- quakes_df$place %>%
+  stringi::stri_trans_general("Latin-ASCII") %>%
+  gsub("\\?akov", "Dakov", ., fixed = TRUE) %>%
+  gsub("\\?ur", "Dur", ., fixed = TRUE) %>%
+  gsub("\\?up", "Zup", ., fixed = TRUE) %>%
+  sapply(capitalize_question_marks) %>%
+  gsub("\\?", "c", .)
+
+
+# Preparing data for use in Observable JS
 quakes_for_ojs <- quakes_df %>%
   mutate(
     time = as.numeric(time) * 1000, # Convert to milliseconds for JS
-    date_only = as.character(date_only) # Convert date to string
+    date_only = as.character(date_only),
+    place = enc2utf8(place)
   ) %>%
   select(mag, place, time, lon, lat, depth, time_only, days_ago, date_only)
 
@@ -82,15 +113,15 @@ ojs_define(quakes_data = quakes_for_ojs)
 ```{ojs}
 //| output: false
 
+// Transposing the R data for use in OJS
 quakes_data_df = transpose(quakes_data)
 
-// Calculate values for value boxes
+// Calculating summary statistics for value boxes
 days_since_last = d3.timeDay.count(d3.max(quakes_data_df, d => d.time), new Date())
 quakes_last_24h = quakes_data_df.filter(d => 
   d.time >= d3.timeDay.offset(new Date(), -1)
 ).length
 last_mag = quakes_data_df[0]?.mag
-
 
 ```
 
@@ -141,20 +172,19 @@ function stripQuotes(str) {
 
 ```{ojs}
 //| output: false
-//| title: Filter Earthquakes
 
+// Loading the D3 library or data manipulation and visualization.
 d3 = require("d3@6")
 
 // Include FontAwesome for icons
 html`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">`
-
 
 // Initialize the filter options with default values
 initial_start_date = d3.min(quakes_data_df, d => d.date_only)
 initial_end_date = d3.max(quakes_data_df, d => d.date_only)
 initial_min_magnitude = 1
 
-
+// Filtering earthquakes based on the selected criteria
 filtered_quakes = {
   reset;
   return quakes_data_df.filter(d => 
@@ -164,6 +194,7 @@ filtered_quakes = {
   );
 }
 
+// Adding an event listener for the reset button
 resetButton = {
   viewof reset.addEventListener("click", () => {
     viewof start_date.value = initial_start_date;
@@ -182,6 +213,7 @@ resetButton = {
 //| component: card
 //| title: Filter Earthquakes
 
+// Create the start date input
 viewof start_date = Inputs.date({
   label: "Start Date", 
   value: initial_start_date,
@@ -190,6 +222,8 @@ viewof start_date = Inputs.date({
   
 })
 
+
+// Create the end date input
 viewof end_date = Inputs.date({
   label: "End Date", 
   value: initial_end_date,
@@ -198,16 +232,17 @@ viewof end_date = Inputs.date({
   
 })
 
-
+// Create the minimum magnitude range input
 viewof min_magnitude = Inputs.range([1, 10], {
   step: 0.1, 
   label: "Min Magnitude", 
   value: initial_min_magnitude
 })
 
+// Create the reset button
 viewof reset = html`<button class="reset-button" id="resetButton"><i class="fas fa-redo"></i></button>`
 
-// Custom Reset Button with Icon
+// Custom styles for the reset button
 html`<style>
   .reset-button {
     width: 40px;
@@ -237,6 +272,7 @@ html`<style>
 ```{ojs}
 //| component: card
 
+// Load Leaflet library
 L = require('leaflet@1.2.0')
 
 // Include Leaflet CSS and custom legend CSS
@@ -262,27 +298,31 @@ html`
 }
 </style>
 `
+
+// Define the color scale for magnitudes
 color_scale = d3.scaleSequential(t => d3.interpolateMagma(1 - t))
   .domain([1, 7]);
 
 
 // Create the map with filtered data
 map = {
-  // Calculate dimensions based on card width
-  let width = 850; // Prilagodite širinu kartice prema potrebi
-  let height = width / 1.6; // Omjer širine i visine za kartu
+  // Set dimensions 
+  let width = 850; 
+  let height = width / 1.6; 
 
   // Create the container for the map
   let container = DOM.element('div', {
     style: `width: ${width}px; height: ${height}px`
   });
   yield container;
-
-   let map = L.map(container).setView([44.4, 16.4], 7);
+  
+   // Initialize the map
+  let map = L.map(container).setView([44.4, 16.4], 7);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png', {
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
-
+  
+   // Add markers for each filtered earthquake
   filtered_quakes.forEach(d => {
     L.circleMarker([d.lat, d.lon], {
       radius: d3.scaleLinear().domain([1, 7]).range([1, 7])(d.mag),
@@ -331,6 +371,7 @@ map = {
 
 ```{ojs}
 
+// Create a table with filtered earthquakes
 viewof table = Inputs.table(filtered_quakes, {
   columns: [
     "date_only",
@@ -361,6 +402,8 @@ viewof table = Inputs.table(filtered_quakes, {
 })
 
 
+
+// Custom styles for the table
 html`<style>
 table {
   table-layout: auto;
