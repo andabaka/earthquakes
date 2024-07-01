@@ -2,14 +2,15 @@
 
 ![Alt text](images/quakes.png)(https://andabaka.github.io/earthquakes/earthquakes.html)
 
-This application displays earthquake data for Croatia from 1990 to the present. The data is sourced from the USGS (United States Geological Survey) database, which is updated daily at 9:00 AM UTC. It's important to note that this data may not reflect real-time conditions due to several factors:
+This dashboard displays earthquake data for Croatia from 1990 to the present. The data is sourced from the USGS (United States Geological Survey) database, which is updated daily at 9:00 AM UTC. It's important to note that this data may not reflect real-time conditions due to several factors:
 
 - Some earthquakes may be missing from the database, especially those of lower magnitude.
 - Smaller earthquakes, particularly outside the U.S., may not be rapidly reported or located.
 - USGS primarily focuses on quickly reporting earthquakes of magnitude 4.5 and above for areas outside the U.S.
 
-The application allows filtering of data by date and magnitude, displays earthquakes on an interactive map, and provides detailed information in a tabular format. For the most accurate and up-to-date information on seismic activity in Croatia, it is recommended to consult local seismological services.
-This application serves as a useful tool for visualizing and analyzing historical earthquake data in Croatia, but should not be used for urgent decision-making or risk assessments without additional verification from local sources.
+Dashboard allows filtering of data by date and magnitude, displays earthquakes on an interactive map, and provides detailed information in a tabular format. For the most accurate and up-to-date information on seismic activity in Croatia, it is recommended to consult local seismological services.
+
+This dashboard serves as a useful tool for visualizing and analyzing historical earthquake data in Croatia, but should not be used for urgent decision-making or risk assessments without additional verification from local sources.
 
 ## Features
 
@@ -44,7 +45,7 @@ This dashboard is deployed using GitHub Pages and is automatically updated daily
 
 ### GitHub Actions
 
-I use GitHub Actions to automate the following processes:
+GitHub Actions are used to automate the following processes:
 
 1. **Data Fetching**: Every day at 9:00 AM UTC, a GitHub Action runs an R script that fetches the latest earthquake data from the USGS API.
 

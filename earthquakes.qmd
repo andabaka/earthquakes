@@ -5,10 +5,7 @@ format:
     logo: "images/logo.png"
     orientation: rows
     embed-resources: true
-   
-
 ---
-
 
 
 ```{r, echo=FALSE, include=FALSE,message=FALSE, load_packages}
@@ -173,7 +170,7 @@ function stripQuotes(str) {
 ```{ojs}
 //| output: false
 
-// Loading the D3 library or data manipulation and visualization.
+// Loading the D3 library or data manipulation and visualization
 d3 = require("d3@6")
 
 // Include FontAwesome for icons
